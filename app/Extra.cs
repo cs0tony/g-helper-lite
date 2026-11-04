@@ -562,6 +562,13 @@ namespace GHelper
 
         private void InitCores()
         {
+            // Lite mode: CPU core disable/enable writes are power control
+            if (!AppConfig.IsPowerControlEnabled())
+            {
+                panelCores.Visible = false;
+                return;
+            }
+
             (int eCores, int pCores) = Program.acpi.GetCores();
             (int eCoresMax, int pCoresMax) = Program.acpi.GetCores(AsusACPI.CORES_MAX);
 
@@ -602,6 +609,9 @@ namespace GHelper
 
         private void ButtonCores_Click(object? sender, EventArgs e)
         {
+            // Lite mode: CPU core disable/enable writes are power control
+            if (!AppConfig.IsPowerControlEnabled()) return;
+
             DialogResult dialogResult = MessageBox.Show(Properties.Strings.AlertAPUMemoryRestart, Properties.Strings.AlertAPUMemoryRestartTitle, MessageBoxButtons.YesNo);
 
             if (dialogResult == DialogResult.Yes)
@@ -626,6 +636,13 @@ namespace GHelper
 
         private void InitVramMem()
         {
+            // Lite mode: APU/VRAM allocation writes are GPU control
+            if (!AppConfig.IsGPUControlEnabled())
+            {
+                panelAPU.Visible = false;
+                return;
+            }
+
             int unitMb = 0;
             if (PawnIO.CpuInfo.IsAMD) vramOptions = Program.acpi.GetVramOptions(out unitMb);
 
@@ -665,6 +682,9 @@ namespace GHelper
 
         private void ComboAPU_SelectedIndexChanged(object? sender, EventArgs e)
         {
+            // Lite mode: APU/VRAM allocation writes are GPU control
+            if (!AppConfig.IsGPUControlEnabled()) return;
+
             int mem = comboAPU.SelectedIndex;
 
             if (IntelVram.Supported && !ProcessHelper.IsUserAdministrator())

@@ -582,11 +582,15 @@ namespace GHelper.Input
         {
             if (name == "m4" && Control.ModifierKeys == (Keys.Control | Keys.Shift | Keys.Alt))
             {
-                Thread.Sleep(3000);
-                if ((User32.GetAsyncKeyState(0x11) & User32.GetAsyncKeyState(0x10) & User32.GetAsyncKeyState(0x12) & 0x8000) != 0)
+                // Lite mode: keep the mux write (and forced reboot) behind gpu_control
+                if (AppConfig.IsGPUControlEnabled())
                 {
-                    Program.acpi.DeviceSet(AsusACPI.GPUMux, 1, "MUX hybrid recovery");
-                    Process.Start(new ProcessStartInfo("shutdown", "/r /t 1") { CreateNoWindow = true, UseShellExecute = false });
+                    Thread.Sleep(3000);
+                    if ((User32.GetAsyncKeyState(0x11) & User32.GetAsyncKeyState(0x10) & User32.GetAsyncKeyState(0x12) & 0x8000) != 0)
+                    {
+                        Program.acpi.DeviceSet(AsusACPI.GPUMux, 1, "MUX hybrid recovery");
+                        Process.Start(new ProcessStartInfo("shutdown", "/r /t 1") { CreateNoWindow = true, UseShellExecute = false });
+                    }
                 }
                 return;
             }
