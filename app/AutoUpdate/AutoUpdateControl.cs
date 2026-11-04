@@ -12,7 +12,7 @@ namespace GHelper.AutoUpdate
 
         SettingsForm settings;
 
-        public string versionUrl = "https://github.com/seerge/g-helper/releases";
+        public string versionUrl = "https://github.com/cs0tony/g-helper-lite/releases";
         public bool update = false;
 
         static long lastUpdate;
@@ -74,21 +74,29 @@ namespace GHelper.AutoUpdate
                 using (var httpClient = new HttpClient())
                 {
                     httpClient.DefaultRequestHeaders.Add("User-Agent", "G-Helper App");
-                    var json = await httpClient.GetStringAsync("https://api.github.com/repos/seerge/g-helper/releases/latest");
+                    var json = await httpClient.GetStringAsync("https://api.github.com/repos/cs0tony/g-helper-lite/releases/latest");
                     var config = JsonSerializer.Deserialize<JsonElement>(json);
                     var tag = config.GetProperty("tag_name").ToString().Replace("v", "");
                     var assets = config.GetProperty("assets");
 
                     string url = null;
 
+                    // The release assets are GHelper.exe and GHelper.zip; the updater
+                    // downloads the zip and extracts GHelper.exe from it, so never fall
+                    // back to a non-zip asset (e.g. the raw exe).
                     for (int i = 0; i < assets.GetArrayLength(); i++)
                     {
-                        if (assets[i].GetProperty("browser_download_url").ToString().Contains(".zip"))
-                            url = assets[i].GetProperty("browser_download_url").ToString();
+                        string downloadUrl = assets[i].GetProperty("browser_download_url").ToString();
+                        if (downloadUrl.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                            url = downloadUrl;
                     }
 
                     if (url is null)
-                        url = assets[0].GetProperty("browser_download_url").ToString();
+                    {
+                        Logger.WriteLine("No .zip asset found in latest release, opening releases page");
+                        LoadReleases();
+                        return;
+                    }
 
                     var gitVersion = new Version(tag);
                     var appVersion = new Version(Assembly.GetExecutingAssembly().GetName().Version.ToString());
