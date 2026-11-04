@@ -83,8 +83,6 @@ namespace GHelper
             checkAmbient = new CheckBox();
             labelSpeed = new Label();
             comboKeyboardSpeed = new RComboBox();
-            panelXGM = new Panel();
-            checkXGM = new CheckBox();
             tableBacklight = new TableLayoutPanel();
             labelBacklightKeyboard = new Label();
             checkAwake = new CheckBox();
@@ -117,7 +115,6 @@ namespace GHelper
             checkNoOverdrive = new CheckBox();
             checkELMB = new CheckBox();
             checkBootSound = new CheckBox();
-            checkKeystoneSound = new CheckBox();
             checkUSBC = new CheckBox();
             checkGpuApps = new CheckBox();
             checkNVPlatform = new CheckBox();
@@ -163,7 +160,6 @@ namespace GHelper
             panelBacklightExtra.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numericBacklightPluggedTime).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numericBacklightTime).BeginInit();
-            panelXGM.SuspendLayout();
             tableBacklight.SuspendLayout();
             panelSettingsHeader.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureScan).BeginInit();
@@ -745,7 +741,6 @@ namespace GHelper
             // 
             panelBacklight.AutoSize = true;
             panelBacklight.Controls.Add(panelBacklightExtra);
-            panelBacklight.Controls.Add(panelXGM);
             panelBacklight.Controls.Add(tableBacklight);
             panelBacklight.Dock = DockStyle.Top;
             panelBacklight.Location = new Point(15, 512);
@@ -842,28 +837,6 @@ namespace GHelper
             comboKeyboardSpeed.Size = new Size(293, 40);
             comboKeyboardSpeed.TabIndex = 0;
             comboKeyboardSpeed.TabStop = false;
-            // 
-            // panelXMG
-            // 
-            panelXGM.Controls.Add(checkXGM);
-            panelXGM.Dock = DockStyle.Top;
-            panelXGM.Location = new Point(0, 265);
-            panelXGM.Margin = new Padding(5, 3, 5, 3);
-            panelXGM.Name = "panelXMG";
-            panelXGM.Size = new Size(949, 59);
-            panelXGM.TabIndex = 45;
-            // 
-            // checkXMG
-            // 
-            checkXGM.AutoSize = true;
-            checkXGM.Location = new Point(5, 11);
-            checkXGM.Margin = new Padding(5, 3, 5, 3);
-            checkXGM.Name = "checkXMG";
-            checkXGM.Padding = new Padding(16, 3, 7, 3);
-            checkXGM.Size = new Size(181, 42);
-            checkXGM.TabIndex = 2;
-            checkXGM.Text = "XG Mobile";
-            checkXGM.UseVisualStyleBackColor = true;
             // 
             // tableBacklight
             // 
@@ -1221,7 +1194,6 @@ namespace GHelper
             panelSettings.Controls.Add(checkAutoToggleClamshellMode);
             panelSettings.Controls.Add(checkTopmost);
             panelSettings.Controls.Add(checkNoOverdrive);
-            panelSettings.Controls.Add(checkKeystoneSound);
             panelSettings.Controls.Add(checkBootSound);
             panelSettings.Controls.Add(checkUSBC);
             panelSettings.Controls.Add(checkGpuApps);
@@ -1300,20 +1272,6 @@ namespace GHelper
             checkBootSound.TabIndex = 5;
             checkBootSound.Text = "Boot Sound";
             checkBootSound.UseVisualStyleBackColor = true;
-            //
-            // checkKeystoneSound
-            //
-            checkKeystoneSound.AutoSize = true;
-            checkKeystoneSound.Dock = DockStyle.Top;
-            checkKeystoneSound.Location = new Point(21, 299);
-            checkKeystoneSound.Margin = new Padding(5, 3, 5, 3);
-            checkKeystoneSound.Name = "checkKeystoneSound";
-            checkKeystoneSound.Padding = new Padding(3);
-            checkKeystoneSound.Size = new Size(917, 42);
-            checkKeystoneSound.TabIndex = 6;
-            checkKeystoneSound.Text = "Keystone Sound";
-            checkKeystoneSound.UseVisualStyleBackColor = true;
-            checkKeystoneSound.Visible = false;
             // 
             // checkUSBC
             // 
@@ -1761,8 +1719,6 @@ namespace GHelper
             panelBacklightExtra.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)numericBacklightPluggedTime).EndInit();
             ((System.ComponentModel.ISupportInitialize)numericBacklightTime).EndInit();
-            panelXGM.ResumeLayout(false);
-            panelXGM.PerformLayout();
             tableBacklight.ResumeLayout(false);
             panelSettingsHeader.ResumeLayout(false);
             panelSettingsHeader.PerformLayout();
@@ -1836,8 +1792,6 @@ namespace GHelper
         private CheckBox checkAmbient;
         private Label labelSpeed;
         private RComboBox comboKeyboardSpeed;
-        private Panel panelXGM;
-        private CheckBox checkXGM;
         private TableLayoutPanel tableBacklight;
         private Label labelBacklightKeyboard;
         private CheckBox checkAwake;
@@ -1879,7 +1833,6 @@ namespace GHelper
         private NumericUpDownWithUnit numericHibernateAfter;
         private ToolTip toolTip;
         private CheckBox checkBootSound;
-        private CheckBox checkKeystoneSound;
         private Panel panelAPU;
         private PictureBox pictureAPUMem;
         private Label labelAPUMem;

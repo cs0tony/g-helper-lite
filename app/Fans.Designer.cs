@@ -35,8 +35,6 @@ namespace GHelper
             Title title1 = new Title();
             ChartArea chartArea2 = new ChartArea();
             Title title2 = new Title();
-            ChartArea chartArea3 = new ChartArea();
-            Title title3 = new Title();
             ChartArea chartArea4 = new ChartArea();
             Title title4 = new Title();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Fans));
@@ -46,7 +44,6 @@ namespace GHelper
             tableFanCharts = new TableLayoutPanel();
             chartGPU = new RChart();
             chartCPU = new RChart();
-            chartXGM = new RChart();
             chartMid = new RChart();
             panelTitleFans = new Panel();
             tableLayoutModes = new TableLayoutPanel();
@@ -180,7 +177,6 @@ namespace GHelper
             tableFanCharts.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)chartGPU).BeginInit();
             ((System.ComponentModel.ISupportInitialize)chartCPU).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)chartXGM).BeginInit();
             ((System.ComponentModel.ISupportInitialize)chartMid).BeginInit();
             panelTitleFans.SuspendLayout();
             tableLayoutModes.SuspendLayout();
@@ -301,7 +297,6 @@ namespace GHelper
             tableFanCharts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tableFanCharts.Controls.Add(chartGPU, 0, 1);
             tableFanCharts.Controls.Add(chartCPU, 0, 0);
-            tableFanCharts.Controls.Add(chartXGM, 0, 2);
             tableFanCharts.Controls.Add(chartMid, 0, 2);
             tableFanCharts.Dock = DockStyle.Fill;
             tableFanCharts.Location = new Point(0, 66);
@@ -343,21 +338,6 @@ namespace GHelper
             chartCPU.Text = "chartCPU";
             title2.Name = "Title1";
             chartCPU.Titles.Add(title2);
-            // 
-            // chartXGM
-            // 
-            chartArea3.Name = "ChartAreaXGM";
-            chartXGM.ChartAreas.Add(chartArea3);
-            chartXGM.Dock = DockStyle.Fill;
-            chartXGM.Location = new Point(12, 694);
-            chartXGM.Margin = new Padding(2, 10, 2, 10);
-            chartXGM.Name = "chartXGM";
-            chartXGM.Size = new Size(786, 209);
-            chartXGM.TabIndex = 3;
-            chartXGM.Text = "chartXGM";
-            title3.Name = "Title4";
-            chartXGM.Titles.Add(title3);
-            chartXGM.Visible = false;
             // 
             // chartMid
             // 
@@ -2067,7 +2047,6 @@ namespace GHelper
             tableFanCharts.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)chartGPU).EndInit();
             ((System.ComponentModel.ISupportInitialize)chartCPU).EndInit();
-            ((System.ComponentModel.ISupportInitialize)chartXGM).EndInit();
             ((System.ComponentModel.ISupportInitialize)chartMid).EndInit();
             panelTitleFans.ResumeLayout(false);
             panelTitleFans.PerformLayout();
@@ -2178,7 +2157,6 @@ namespace GHelper
         private RChart chartGPU;
         private RChart chartCPU;
         private RChart chartMid;
-        private RChart chartXGM;
         private Label labelTip;
         private Panel panelPower;
         private Panel panelCPU;

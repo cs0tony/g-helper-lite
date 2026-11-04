@@ -983,7 +983,6 @@ namespace GHelper.USB
             PeripheralsProvider.SyncHeadsetsWithAura();
 
             AsusHid.Write(new List<byte[]> { AuraMessage(Mode, _Color1, _Color2, _speed), MESSAGE_SET, MESSAGE_APPLY }, "Aura", AsusHid.MAIN_AURA_PIDS);
-            XGM.LightMode(Mode, _Color1, _Color2, _speed);
 
             if (isACPI)
                 Program.acpi.TUFKeyboardRGB(Mode, Color1, _speed);

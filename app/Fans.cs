@@ -21,7 +21,6 @@ namespace GHelper
         Series seriesCPU;
         Series seriesGPU;
         Series seriesMid;
-        Series seriesXGM;
 
         static bool gpuVisible = true;
         static bool fanRpm = true;
@@ -90,12 +89,10 @@ namespace GHelper
             seriesCPU = chartCPU.Series.Add("CPU");
             seriesGPU = chartGPU.Series.Add("GPU");
             seriesMid = chartMid.Series.Add("Mid");
-            seriesXGM = chartXGM.Series.Add("XGM");
 
             seriesCPU.Color = colorStandard;
             seriesGPU.Color = colorTurbo;
             seriesMid.Color = colorEco;
-            seriesXGM.Color = Color.Orange;
 
             chartCPU.Series.Add("Floor").Color = Color.FromArgb(64, colorStandard);
             chartGPU.Series.Add("Floor").Color = Color.FromArgb(64, colorTurbo);
@@ -113,39 +110,29 @@ namespace GHelper
             chartMid.MouseUp += ChartCPU_MouseUp;
             chartMid.MouseLeave += ChartCPU_MouseLeave;
 
-            chartXGM.MouseMove += (sender, e) => ChartCPU_MouseMove(sender, e, AsusFan.XGM);
-            chartXGM.MouseUp += ChartCPU_MouseUp;
-            chartXGM.MouseLeave += ChartCPU_MouseLeave;
-
             chartCPU.MouseClick += ChartCPU_MouseClick;
             chartGPU.MouseClick += ChartCPU_MouseClick;
             chartMid.MouseClick += ChartCPU_MouseClick;
-            chartXGM.MouseClick += ChartCPU_MouseClick;
 
             chartCPU.TabStop = true;
             chartGPU.TabStop = true;
             chartMid.TabStop = true;
-            chartXGM.TabStop = true;
 
             chartCPU.PreviewKeyDown += Chart_PreviewKeyDown;
             chartGPU.PreviewKeyDown += Chart_PreviewKeyDown;
             chartMid.PreviewKeyDown += Chart_PreviewKeyDown;
-            chartXGM.PreviewKeyDown += Chart_PreviewKeyDown;
 
             chartCPU.KeyDown += (s, e) => Chart_KeyDown(s, e, AsusFan.CPU);
             chartGPU.KeyDown += (s, e) => Chart_KeyDown(s, e, AsusFan.GPU);
             chartMid.KeyDown += (s, e) => Chart_KeyDown(s, e, AsusFan.Mid);
-            chartXGM.KeyDown += (s, e) => Chart_KeyDown(s, e, AsusFan.XGM);
 
             chartCPU.GotFocus += (s, e) => Chart_GotFocus(s, AsusFan.CPU);
             chartGPU.GotFocus += (s, e) => Chart_GotFocus(s, AsusFan.GPU);
             chartMid.GotFocus += (s, e) => Chart_GotFocus(s, AsusFan.Mid);
-            chartXGM.GotFocus += (s, e) => Chart_GotFocus(s, AsusFan.XGM);
 
             chartCPU.LostFocus += Chart_LostFocus;
             chartGPU.LostFocus += Chart_LostFocus;
             chartMid.LostFocus += Chart_LostFocus;
-            chartXGM.LostFocus += Chart_LostFocus;
 
             buttonReset.Click += ButtonReset_Click;
 
@@ -345,7 +332,6 @@ namespace GHelper
             chartCPU.AccessibleName = "CPU fan curve";
             chartGPU.AccessibleName = "GPU fan curve";
             chartMid.AccessibleName = "Mid fan curve";
-            chartXGM.AccessibleName = "XG Mobile fan curve";
         }
 
         private void CheckFanClamp_Click(object? sender, EventArgs e)
@@ -380,7 +366,6 @@ namespace GHelper
                 SetAxis(chartCPU, AsusFan.CPU);
                 SetAxis(chartGPU, AsusFan.GPU);
                 if (chartMid.Visible) SetAxis(chartMid, AsusFan.Mid);
-                if (chartXGM.Visible) SetAxis(chartXGM, AsusFan.XGM);
             }
 
         }
@@ -941,9 +926,6 @@ namespace GHelper
                 case AsusFan.Mid:
                     title = Properties.Strings.FanProfileMid + scale;
                     break;
-                case AsusFan.XGM:
-                    title = "XG Mobile" + scale;
-                    break;
             }
 
             chart.Titles[0].Text = title;
@@ -969,17 +951,14 @@ namespace GHelper
             if (chart.Legends.Count > 0)
                 chart.Legends[0].Enabled = false;
 
-            if (device != AsusFan.XGM)
-            {
-                Series floor = chart.Series[1];
-                floor.ChartType = SeriesChartType.Area;
-                floor.Points.Clear();
+            Series floor = chart.Series[1];
+            floor.ChartType = SeriesChartType.Area;
+            floor.Points.Clear();
 
-                byte[] floors = Program.acpi.GetFanFloor(device);
-                for (int i = 0; i < 8; i++)
-                    floor.Points.AddXY(30 + i * 10, floors[i]);
-                floor.Points.AddXY(tempMax, floors[7]);
-            }
+            byte[] floors = Program.acpi.GetFanFloor(device);
+            for (int i = 0; i < 8; i++)
+                floor.Points.AddXY(30 + i * 10, floors[i]);
+            floor.Points.AddXY(tempMax, floors[7]);
 
         }
 
@@ -1313,20 +1292,6 @@ namespace GHelper
                 AppConfig.Set("mid_fan", 0);
             }
 
-            // XG Mobile Fan check
-            if (Program.acpi.IsXGConnected() || XGM.IsConnected())
-            {
-                AppConfig.Set("xgm_fan", 1);
-                chartCount++;
-                chartXGM.Visible = true;
-                SetChart(chartXGM, AsusFan.XGM);
-                LoadProfile(seriesXGM, AsusFan.XGM);
-            }
-            else
-            {
-                AppConfig.Set("xgm_fan", 0);
-            }
-
             try
             {
                 if (chartCount > 2)
@@ -1355,14 +1320,12 @@ namespace GHelper
                 seriesCPU.Color = colorStandard;
                 seriesGPU.Color = colorTurbo;
                 seriesMid.Color = colorEco;
-                seriesXGM.Color = Color.Orange;
             }
             else
             {
                 seriesCPU.Color = Color.Gray;
                 seriesGPU.Color = Color.Gray;
                 seriesMid.Color = Color.Gray;
-                seriesXGM.Color = Color.Gray;
             }
 
             InitHysteresis();
@@ -1433,9 +1396,6 @@ namespace GHelper
                 if (AppConfig.Is("mid_fan"))
                     LoadProfile(seriesMid, AsusFan.Mid, true);
 
-                if (AppConfig.Is("xgm_fan"))
-                    LoadProfile(seriesXGM, AsusFan.XGM, true);
-
                 checkApplyFans.Checked = false;
                 AppConfig.SetMode("auto_apply", 0);
             }
@@ -1444,7 +1404,6 @@ namespace GHelper
             seriesCPU.Color = Color.Gray;
             seriesGPU.Color = Color.Gray;
             seriesMid.Color = Color.Gray;
-            seriesXGM.Color = Color.Gray;
 
             if (AppConfig.IsPowerControlEnabled())
             {
@@ -1466,9 +1425,6 @@ namespace GHelper
             modeControl.ResetPerformanceMode();
 
             InitPowerPlan();
-
-            if (AppConfig.IsFanControlEnabled()) XGM.Reset();
-
 
             if (gpuVisible && AppConfig.IsGPUControlEnabled())
             {
@@ -1520,9 +1476,6 @@ namespace GHelper
 
             if (AppConfig.Is("mid_fan"))
                 SaveProfile(seriesMid, AsusFan.Mid);
-
-            if (AppConfig.Is("xgm_fan"))
-                SaveProfile(seriesXGM, AsusFan.XGM);
 
             modeControl.AutoFans();
         }

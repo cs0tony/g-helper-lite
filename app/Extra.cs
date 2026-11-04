@@ -54,17 +54,6 @@ namespace GHelper
               {"custom", Properties.Strings.Custom}
             };
 
-            if (AppConfig.IsDUO())
-            {
-                customActions.Add("screenpad_down", Properties.Strings.ScreenPadDown);
-                customActions.Add("screenpad_up", Properties.Strings.ScreenPadUp);
-            }
-
-            if (AppConfig.IsAlly())
-            {
-                customActions.Add("controller", "Controller Mode");
-            }
-
             switch (name)
             {
                 case "m1":
@@ -156,7 +145,6 @@ namespace GHelper
             checkBoot.Text = checkBootLogo.Text = checkBootBar.Text = checkBootLid.Text = Properties.Strings.Boot + "/" + Properties.Strings.Shutdown;
             checkBattery.Text = checkBatteryLogo.Text = checkBatteryBar.Text = checkBatteryLid.Text = Properties.Strings.Battery;
             checkBootSound.Text = Properties.Strings.BootSound;
-            checkKeystoneSound.Text = Properties.Strings.KeystoneSound;
             checkStatusLed.Text = Properties.Strings.LEDStatusIndicators;
 
             labelSpeed.Text = Properties.Strings.AnimationSpeed;
@@ -443,10 +431,6 @@ namespace GHelper
             sliderBrightness.AccessibleName = Properties.Strings.LaptopBacklight + ": " + sliderBrightness.Value;
             sliderBrightness.ValueChanged += SliderBrightness_ValueChanged;
 
-            panelXGM.Visible = XGM.IsConnected();
-            checkXGM.Checked = !(AppConfig.Get("xmg_light") == 0);
-            checkXGM.CheckedChanged += CheckXGM_CheckedChanged;
-
             numericBacklightTime.Value = AppConfig.Get("keyboard_timeout", 60);
             numericBacklightPluggedTime.Value = AppConfig.Get("keyboard_ac_timeout", 0);
 
@@ -502,10 +486,6 @@ namespace GHelper
             checkStandbyNetworking.Checked = AppConfig.IsAutoStandbyNetworking();
             checkStandbyNetworking.CheckedChanged += CheckStandbyNetworking_CheckedChanged;
 
-            checkKeystoneSound.Visible = AppConfig.IsKeystone();
-            checkKeystoneSound.Checked = Keystone.IsEnabled();
-            checkKeystoneSound.CheckedChanged += CheckKeystoneSoundCheckedChanged;
-
             toolTip.SetToolTip(checkAutoToggleClamshellMode, Properties.Strings.ClamshellModeTooltip);
             toolTip.SetToolTip(checkNVPlatform, Properties.Strings.NVPlatformTooltip);
             toolTip.SetToolTip(checkAspm, Properties.Strings.DisablePCIeASPMTooltip);
@@ -517,11 +497,6 @@ namespace GHelper
 
             InitACPITesting();
 
-        }
-
-        private void CheckKeystoneSoundCheckedChanged(object? sender, EventArgs e)
-        {
-            Keystone.SetEnabled(checkKeystoneSound.Checked);
         }
 
         private void CheckAspm_CheckedChanged(object? sender, EventArgs e)
@@ -861,12 +836,6 @@ namespace GHelper
             AppConfig.Set("backlight_ambient", checkAmbient.Checked ? 1 : 0);
             AmbientLight.Init();
             if (!checkAmbient.Checked) InputDispatcher.SetBacklightAuto();
-        }
-
-        private void CheckXGM_CheckedChanged(object? sender, EventArgs e)
-        {
-            AppConfig.Set("xmg_light", (checkXGM.Checked ? 1 : 0));
-            XGM.Light(checkXGM.Checked);
         }
 
         private void CheckELMB_CheckedChanged(object? sender, EventArgs e)

@@ -1100,7 +1100,7 @@ public static class HardwareControl
 
     // Lite mode: this only (re)initialises the GPU monitoring handle (NVAPI/ADLX) — sensor
     // polling (temps, usage, power) keeps working with the gpu_control switch off. Calls that
-    // write hardware (GPU mode init/switch, XGM toggle) are gated at their call sites by
+    // write hardware (GPU mode init/switch) are gated at their call sites by
     // AppConfig.IsGPUControlEnabled() instead.
     public static void RecreateGpuControl()
     {
@@ -1124,7 +1124,6 @@ public static class HardwareControl
             if (_gpuControl.IsValid)
             {
                 GpuControl = _gpuControl;
-                if (GpuControl.FullName.Contains("6850M")) AppConfig.Set("xgm_special", 1);
                 Logger.WriteLine(GpuControl.FullName);
                 return;
             }

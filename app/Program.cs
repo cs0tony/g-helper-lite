@@ -1,4 +1,3 @@
-using GHelper.Ally;
 using GHelper.Battery;
 using GHelper.Display;
 using GHelper.Gpu;
@@ -27,7 +26,6 @@ namespace GHelper
 
         public static ModeControl modeControl;
         public static GPUModeControl gpuControl;
-        public static AllyControl allyControl;
         public static ClamshellModeControl clamshellControl;
 
         public static ToastForm toast;
@@ -81,7 +79,6 @@ namespace GHelper
             settingsForm = new SettingsForm();
             modeControl = new ModeControl();
             gpuControl = new GPUModeControl(settingsForm);
-            allyControl = new AllyControl(settingsForm);
             clamshellControl = new ClamshellModeControl();
             toast = new ToastForm();
 
@@ -143,7 +140,6 @@ namespace GHelper
             inputDispatcher = new InputDispatcher();
 
             settingsForm.InitAura();
-            settingsForm.InitMatrix();
 
             ScreenControl.InitScreen();
 
@@ -237,7 +233,6 @@ namespace GHelper
             modeControl.ShutdownReset();
             BatteryControl.AutoBattery();
             InputDispatcher.ShutdownStatusLed();
-            XGM.NotifyShutdown();
         }
 
         private static void SystemEvents_SessionSwitch(object sender, SessionSwitchEventArgs e)
@@ -287,12 +282,6 @@ namespace GHelper
                     if (settingsForm.updatesForm is not null && settingsForm.updatesForm.Text != "")
                         settingsForm.updatesForm.InitTheme();
 
-                    if (settingsForm.matrixForm is not null && settingsForm.matrixForm.Text != "")
-                        settingsForm.matrixForm.InitTheme();
-
-                    if (settingsForm.handheldForm is not null && settingsForm.handheldForm.Text != "")
-                        settingsForm.handheldForm.InitTheme();
-
                     break;
             }
         }
@@ -315,7 +304,6 @@ namespace GHelper
             Logger.WriteLine("AutoSetting for " + SystemInformation.PowerStatus.PowerLineStatus.ToString());
 
             BatteryControl.AutoBattery(init);
-            if (init) InputDispatcher.InitScreenpad();
             DynamicLightingHelper.Init();
             ScreenControl.InitOptimalBrightness();
 
@@ -324,20 +312,10 @@ namespace GHelper
 
             modeControl.AutoPerformance(powerChanged);
 
-            if (powerChanged) settingsForm.matrixControl.SetMatrix(true);
-            else settingsForm.matrixControl.SetDevice(true);
             InputDispatcher.InitStatusLed();
             if (init) NumberPad.Init();
-            XGM.Init();
 
-            if (AppConfig.IsAlly())
-            {
-                allyControl.Init();
-            }
-            else
-            {
-                InputDispatcher.AutoKeyboard();
-            }
+            InputDispatcher.AutoKeyboard();
 
             // Lite mode: GPU auto switching only runs when gpu_control is enabled
             bool switched = false;
@@ -410,7 +388,6 @@ namespace GHelper
                 if (AppConfig.IsGPUControlEnabled()) gpuControl.StandardModeFix();
                 modeControl.ShutdownReset();
                 InputDispatcher.ShutdownStatusLed();
-                XGM.NotifyShutdown();
                 return;
             }
 
@@ -455,10 +432,7 @@ namespace GHelper
 
                 settingsForm.Left = screen.WorkingArea.Right - 10 - settingsForm.Width;
 
-                if (AppConfig.IsAlly())
-                    settingsForm.Top = Math.Max(10, screen.Bounds.Height - 110 - settingsForm.Height);
-                else
-                    settingsForm.Top = screen.WorkingArea.Top - screen.Bounds.Top > screen.Bounds.Bottom - screen.WorkingArea.Bottom ? screen.WorkingArea.Top + 10 : screen.WorkingArea.Bottom - 10 - settingsForm.Height;
+                settingsForm.Top = screen.WorkingArea.Top - screen.Bounds.Top > screen.Bounds.Bottom - screen.WorkingArea.Bottom ? screen.WorkingArea.Top + 10 : screen.WorkingArea.Bottom - 10 - settingsForm.Height;
 
                 settingsForm.VisualiseGPUMode();
             }

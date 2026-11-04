@@ -244,13 +244,6 @@ namespace GHelper.Mode
             if (AppConfig.IsApplyFans() || force)
             {
 
-                bool xgmFan = false;
-                if (AppConfig.Is("xgm_fan"))
-                {
-                    XGM.SetFan(AppConfig.GetFanConfig(AsusFan.XGM));
-                    xgmFan = Program.acpi.IsXGConnected();
-                }
-
                 int cpuResult = Program.acpi.SetFanCurve(AsusFan.CPU, AppConfig.GetFanConfig(AsusFan.CPU));
                 int gpuResult = Program.acpi.SetFanCurve(AsusFan.GPU, AppConfig.GetFanConfig(AsusFan.GPU));
 
@@ -283,7 +276,7 @@ namespace GHelper.Mode
                     Program.acpi.SetFanHysteresis(hystUp, hystDown);
 
                 // force set PPTs for missbehaving bios on FX507/517 series
-                if ((AppConfig.IsPowerRequired() || xgmFan) && !AppConfig.IsApplyPower())
+                if (AppConfig.IsPowerRequired() && !AppConfig.IsApplyPower())
                 {
                     Task.Run(async () =>
                     {
@@ -293,9 +286,6 @@ namespace GHelper.Mode
                     });
                 }
 
-            } else
-            {
-                XGM.Reset();
             }
 
             SetModeLabel();

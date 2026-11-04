@@ -8,7 +8,7 @@ namespace GHelper.Gpu
 {
     // Lite mode: GPUModeControl still exists because InputDispatcher/Settings dereference it,
     // but when AppConfig.IsGPUControlEnabled() is false (default) every method that writes
-    // hardware or state (ACPI GPU mode/eco/mux, XGM, process kills, NV service restarts,
+    // hardware or state (ACPI GPU mode/eco/mux, process kills, NV service restarts,
     // event-log polling) short-circuits at the top as the last line of defence.
     // Read-only monitoring (GPU temperature, usage, power, VRAM) lives in
     // HardwareControl.GpuControl / NvmlHelper / AmdGpuControl sensors and keeps working.
@@ -332,63 +332,6 @@ namespace GHelper.Gpu
 
         }
 
-
-        public void ToggleXGM(bool silent = false)
-        {
-            // XG Mobile eGPU toggle: writes ACPI GPUXG, resets/initialises XGM and recreates
-            // the GPU control handle. InputDispatcher XGM hotkey lands here unguarded ->
-            // must short-circuit itself.
-            if (!AppConfig.IsGPUControlEnabled()) return;
-
-            Task.Run(async () =>
-            {
-                settings.LockGPUModes();
-
-                if (Program.acpi.DeviceGet(AsusACPI.GPUXG) == 1)
-                {
-                    XGM.Reset();
-                    HardwareControl.KillGPUApps();
-
-                    if (silent)
-                    {
-                        Program.acpi.DeviceSet(AsusACPI.GPUXG, 0, "GPU XGM");
-                        await Task.Delay(TimeSpan.FromSeconds(15));
-                    }
-                    else
-                    {
-                        DialogResult dialogResult = settings.ShowMessage("Did you close all applications running on XG Mobile?", "Disabling XG Mobile", MessageBoxButtons.YesNo);
-                        if (dialogResult == DialogResult.Yes)
-                        {
-                            Program.acpi.DeviceSet(AsusACPI.GPUXG, 0, "GPU XGM");
-                            await Task.Delay(TimeSpan.FromSeconds(15));
-                            HardwareControl.RecreateGpuControl();
-                        }
-                    }
-                }
-                else
-                {
-
-                    if (AppConfig.Is("xgm_special"))
-                        Program.acpi.DeviceSet(AsusACPI.GPUXG, 0x101, "GPU XGM");
-                    else
-                        Program.acpi.DeviceSet(AsusACPI.GPUXG, 1, "GPU XGM");
-
-                    XGM.Init();
-
-                    await Task.Delay(TimeSpan.FromSeconds(15));
-                    await HardwareControl.RecreateGpuControlWithRetry(6, 5);
-
-                    if (AppConfig.IsApplyFans())
-                        XGM.SetFan(AppConfig.GetFanConfig(AsusFan.XGM));
-
-                }
-
-                settings.Invoke(delegate
-                {
-                    InitGPUMode();
-                });
-            });
-        }
 
         public void KillGPUApps()
         {

@@ -835,7 +835,6 @@ namespace GHelper.Peripherals
             DetectAllAsusKeyboards();
             DetectAllAsusHeadsets();
             if (AppConfig.IsDetachableKeyboard()) Program.inputDispatcher.Init();
-            XGM.Init();
         }
     }
 }

@@ -32,7 +32,6 @@ namespace GHelper.Input
         public static Keys keyProfile2 = (Keys)AppConfig.Get("keybind_profile_2", (int)Keys.F16);
         public static Keys keyProfile3 = (Keys)AppConfig.Get("keybind_profile_3", (int)Keys.F19);
         public static Keys keyProfile4 = (Keys)AppConfig.Get("keybind_profile_4", (int)Keys.F20);
-        public static Keys keyXGM = (Keys)AppConfig.Get("keybind_xgm", (int)Keys.F21);
         public static Keys keyOverlay = (Keys)AppConfig.Get("keybind_overlay", (int)Keys.O);
 
         public static ModifierKeys keyModifier = GetModifierKeys("modifier_keybind", ModifierKeys.Shift | ModifierKeys.Control);
@@ -178,7 +177,6 @@ namespace GHelper.Input
                 hook.RegisterHotKey(keyModifierAlt, keyProfile2);
                 hook.RegisterHotKey(keyModifierAlt, keyProfile3);
                 hook.RegisterHotKey(keyModifierAlt, keyProfile4);
-                hook.RegisterHotKey(keyModifierAlt, keyXGM);
 
                 hook.RegisterHotKey(ModifierKeys.Control, Keys.VolumeDown);
                 hook.RegisterHotKey(ModifierKeys.Control, Keys.VolumeUp);
@@ -515,7 +513,6 @@ namespace GHelper.Input
                 if (e.Key == keyProfile2) modeControl.SetPerformanceMode(2, true);
                 if (e.Key == keyProfile3) modeControl.SetPerformanceMode(3, true);
                 if (e.Key == keyProfile4) modeControl.SetPerformanceMode(4, true);
-                if (e.Key == keyXGM) Program.settingsForm.gpuControl.ToggleXGM(true);
                 if (e.Key == keyOverlay) Program.settingsForm.BeginInvoke(() => Program.settingsForm.ToggleOverlay(true));
 
                 switch (e.Key)
@@ -526,25 +523,14 @@ namespace GHelper.Input
                     case Keys.F2:
                         SetBrightness(true);
                         break;
-                    case Keys.F3:
-                        Program.settingsForm.gpuControl.ToggleXGM(true);
-                        break;
-                    case Keys.F4:
-                        Program.settingsForm.BeginInvoke(Program.settingsForm.allyControl.ToggleModeHotkey);
-                        break;
                     case Keys.F6:
                         ToggleTouchScreen();
                         break;
                     case Keys.F7:
-                        if (AppConfig.IsDUO()) SetScreenpad(-10);
-                        else SetBrightnessDimming(-10);
+                        SetBrightnessDimming(-10);
                         break;
                     case Keys.F8:
-                        if (AppConfig.IsDUO()) SetScreenpad(10);
-                        else SetBrightnessDimming(10);
-                        break;
-                    case Keys.F9:
-                        Program.settingsForm.BeginInvoke(Program.settingsForm.allyControl.ToggleFPSLimit, true);
+                        SetBrightnessDimming(10);
                         break;
                     case Keys.F13:
                         ToggleScreenRate();
@@ -700,20 +686,11 @@ namespace GHelper.Input
                 case "brightness_down":
                     SetBrightness(false);
                     break;
-                case "screenpad_up":
-                    SetScreenpad(10);
-                    break;
-                case "screenpad_down":
-                    SetScreenpad(-10);
-                    break;
                 case "custom":
                     CustomKey(name);
                     break;
                 case "calculator":
                     LaunchProcess("calc");
-                    break;
-                case "controller":
-                    Program.settingsForm.BeginInvoke(Program.settingsForm.allyControl.ToggleModeHotkey);
                     break;
                 case "touchscreen":
                     ToggleTouchScreen();
@@ -1020,9 +997,7 @@ namespace GHelper.Input
                 case 16: // FN+F7
                     if (Control.ModifierKeys == Keys.Shift)
                     {
-                        if (AppConfig.IsDUO()) SetScreenpad(-10);
-                        else if (Program.settingsForm.matrixControl.IsValid) Program.settingsForm.BeginInvoke(Program.settingsForm.CycleMatrix, -1);
-                        else SetBacklight(-1);
+                        SetBacklight(-1);
                     }
                     else if (Control.ModifierKeys == Keys.Control && AppConfig.IsOLED())
                     {
@@ -1036,9 +1011,7 @@ namespace GHelper.Input
                 case 32: // FN+F8
                     if (Control.ModifierKeys == Keys.Shift)
                     {
-                        if (AppConfig.IsDUO()) SetScreenpad(10);
-                        else if (Program.settingsForm.matrixControl.IsValid) Program.settingsForm.BeginInvoke(Program.settingsForm.CycleMatrix, 1);
-                        else SetBacklight(1);
+                        SetBacklight(1);
                     }
                     else if (Control.ModifierKeys == Keys.Control && AppConfig.IsOLED())
                     {
@@ -1058,12 +1031,6 @@ namespace GHelper.Input
                 case 108: // FN+F11
                     if (!AppConfig.IsHardwareHotkeys()) SleepEvent();
                     else lastSleep = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                    break;
-                case 106: // Screenpad button on DUO
-                    if (Control.ModifierKeys == Keys.Shift)
-                        ToggleScreenpad();
-                    else
-                        SetScreenpad(100);
                     break;
                 case 51:    // Fn+F6 on old TUFs
                 case 53:    // Fn+F6 on GA-502DU model
@@ -1194,20 +1161,6 @@ namespace GHelper.Input
 
         }
 
-        public static void ToggleScreenpad()
-        {
-            int toggle = AppConfig.Is("screenpad_toggle") ? 0 : 1;
-            int brightness = toggle == 0 ? -10 : AppConfig.Get("screenpad", 100);
-
-            Debug.WriteLine($"Screenpad toggle = {toggle}");
-
-            ApplyScreenpadAction(brightness, true);
-
-            AppConfig.Set("screenpad_toggle", toggle);
-
-            Program.toast.RunToast($"Screen Pad " + (toggle == 1 ? "On" : "Off"), toggle > 0 ? ToastIcon.BrightnessUp : ToastIcon.BrightnessDown);
-        }
-
         public static void ToggleScreenRate()
         {
             AppConfig.Set("screen_auto", 0);
@@ -1305,72 +1258,6 @@ namespace GHelper.Input
             if (cameraStatus >= 0) SetCamera(cameraStatus, false);
         }
 
-        private static System.Threading.Timer screenpadActionTimer;
-        private static int screenpadBrightnessToSet;
-        public static void ApplyScreenpadAction(int brightness, bool instant = true)
-        {
-            var delay = AppConfig.Get("screenpad_delay", 1500);
-
-            //Action
-            Action<int> action = (b) =>
-            {
-                if (b >= 0) Program.acpi.DeviceSet(AsusACPI.ScreenPadToggle, 1, "ScreenpadOn");
-                int[] brightnessValues = [0, 4, 9, 14, 21, 32, 48, 73, 111, 169, 255];
-                Program.acpi.DeviceSet(AsusACPI.ScreenPadBrightness, brightnessValues[Math.Min(brightnessValues.Length - 1, Math.Max(0, b / 10))], "Screenpad");
-                if (b < 0) Program.acpi.DeviceSet(AsusACPI.ScreenPadToggle, 0, "ScreenpadOff");
-            };
-
-            if (delay <= 0 || instant) //instant action
-            {
-                action(brightness);
-            }
-            else //delayed action
-            {
-                //Timer Approach
-                if (screenpadActionTimer == null)
-                {
-                    screenpadActionTimer = new System.Threading.Timer(_ => action(screenpadBrightnessToSet), null, Timeout.Infinite, Timeout.Infinite);
-                }
-                //Start Timer
-                screenpadBrightnessToSet = brightness;
-                screenpadActionTimer.Change(delay, Timeout.Infinite);
-            }
-        }
-
-        public static void SetScreenpad(int delta)
-        {
-            int brightness = AppConfig.Get("screenpad", 100);
-
-            if (delta == 100)
-            {
-                if (brightness < 0) brightness = 100;
-                else if (brightness >= 100) brightness = 0;
-                else brightness = -10;
-                ApplyScreenpadAction(brightness, false);
-            }
-            else
-            {
-                brightness = Math.Max(Math.Min(100, brightness + delta), 0);
-                ApplyScreenpadAction(brightness);
-            }
-
-            AppConfig.Set("screenpad", brightness);
-
-            string toast;
-
-            if (brightness < 0) toast = "Off";
-            else toast = brightness.ToString() + "%";
-
-            Program.toast.RunToast($"Screen Pad {toast}", delta > 0 ? ToastIcon.BrightnessUp : ToastIcon.BrightnessDown);
-        }
-
-        public static void InitScreenpad()
-        {
-            if (!AppConfig.IsDUO()) return;
-            int brightness = AppConfig.Get("screenpad");
-            if (brightness != -1) ApplyScreenpadAction(brightness);
-        }
-
         public static void SetStatusLED(bool status)
         {
             Program.acpi.DeviceSet(AsusACPI.StatusLed, status ? 7 : 0, "StatusLED");
@@ -1409,7 +1296,6 @@ namespace GHelper.Input
                 if (AppConfig.NoWMI()) return;
 
                 if (EventID == 123) Program.OnChargerEvent();
-                if (EventID == 186 || EventID == 194) Program.settingsForm.VisualizeXGM();
 
                 HandleEvent(EventID);
             }
