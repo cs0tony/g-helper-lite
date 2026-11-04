@@ -282,6 +282,17 @@ namespace GHelper
 
             if (AppConfig.IsAlly()) tableScreen.ColumnCount = 3;
 
+            // Lite mode: GPU mode section (buttons, picture, tray menu entries) is hidden
+            // and not visualised unless gpu_control is set to 1 in config.json
+            if (!AppConfig.IsGPUControlEnabled())
+            {
+                isGpuSection = false;
+                panelGPU.Visible = false;
+            }
+
+            // Lite mode: Fans + Power panel is hidden unless fan_control is set to 1 in config.json
+            if (!AppConfig.IsFanControlEnabled()) buttonFans.Visible = false;
+
             buttonAutoTDP.Click += ButtonAutoTDP_Click;
             buttonAutoTDP.BorderColor = colorTurbo;
 
@@ -960,6 +971,7 @@ namespace GHelper
 
         private void ButtonXGM_Click(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsGPUControlEnabled()) return;
             gpuControl.ToggleXGM();
         }
 
@@ -1185,6 +1197,9 @@ namespace GHelper
 
         public void FansToggle(int index = 0)
         {
+            // Lite mode: fan/power control disabled by default — never create or show the Fans panel
+            if (!AppConfig.IsFanControlEnabled()) return;
+
             if (fansForm == null || fansForm.Text == "")
             {
                 fansForm = new Fans();
@@ -1613,22 +1628,26 @@ namespace GHelper
 
         private void ButtonUltimate_Click(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsGPUControlEnabled()) return;
             gpuControl.SetGPUMode(AsusACPI.GPUModeUltimate);
         }
 
         private void ButtonStandard_Click(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsGPUControlEnabled()) return;
             gpuControl.SetGPUMode(AsusACPI.GPUModeStandard);
         }
 
         private void ButtonEco_Click(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsGPUControlEnabled()) return;
             gpuControl.SetGPUMode(AsusACPI.GPUModeEco);
         }
 
 
         private void ButtonOptimized_Click(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsGPUControlEnabled()) return;
             AppConfig.Set("gpu_auto", (AppConfig.Get("gpu_auto") == 1) ? 0 : 1);
             VisualiseGPUMode();
             gpuControl.AutoGPUMode(true);
@@ -1636,6 +1655,7 @@ namespace GHelper
 
         private void ButtonStopGPU_Click(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsGPUControlEnabled()) return;
             gpuControl.KillGPUApps();
         }
 
@@ -1911,6 +1931,13 @@ namespace GHelper
         public void VisualiseGPUMode(int GPUMode = -1)
         {
             if (InvokeRequired) { Invoke(() => VisualiseGPUMode(GPUMode)); return; }
+
+            // Lite mode: GPU control disabled — GPU section stays hidden, no GPU mode polling
+            if (!AppConfig.IsGPUControlEnabled())
+            {
+                panelGPU.Visible = false;
+                return;
+            }
 
             if (toolTip.GetToolTip(pictureGPU) != (GPUModeControl.gpuError ?? ""))
             {

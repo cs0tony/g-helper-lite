@@ -831,6 +831,7 @@ public static class HardwareControl
         }
     }
 
+    // PawnIO IntelMsr is used for RAPL package power READS only (monitoring), no MSR writes.
     private static PawnIO.IntelMsr? _intelMsr;
     private static bool _intelMsrPowerFailed;
 
@@ -1097,6 +1098,10 @@ public static class HardwareControl
         }
     }
 
+    // Lite mode: this only (re)initialises the GPU monitoring handle (NVAPI/ADLX) — sensor
+    // polling (temps, usage, power) keeps working with the gpu_control switch off. Calls that
+    // write hardware (GPU mode init/switch, XGM toggle) are gated at their call sites by
+    // AppConfig.IsGPUControlEnabled() instead.
     public static void RecreateGpuControl()
     {
         if (AppConfig.NoGpu()) return;

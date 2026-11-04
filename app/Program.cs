@@ -115,7 +115,8 @@ namespace GHelper
 
             Application.EnableVisualStyles();
 
-            HardwareControl.RecreateGpuControl();
+            // Lite mode: skip GPU control initialisation unless gpu_control is enabled
+            if (AppConfig.IsGPUControlEnabled()) HardwareControl.RecreateGpuControl();
 
             trayIcon = new NotifyIcon
             {
@@ -229,7 +230,8 @@ namespace GHelper
 
         private static void SystemEvents_SessionEnding(object sender, SessionEndingEventArgs e)
         {
-            gpuControl.StandardModeFix();
+            // Lite mode: never force GPU mode on shutdown unless gpu_control is enabled
+            if (AppConfig.IsGPUControlEnabled()) gpuControl.StandardModeFix();
             modeControl.ShutdownReset();
             BatteryControl.AutoBattery();
             InputDispatcher.ShutdownStatusLed();
@@ -299,7 +301,7 @@ namespace GHelper
         {
             int skipDelay = wakeup ? 10000 : 3000;
 
-            if (init) gpuControl.CaptureNvBootState();
+            if (init && AppConfig.IsGPUControlEnabled()) gpuControl.CaptureNvBootState();
 
             lock (autoLock)
             {
@@ -335,13 +337,18 @@ namespace GHelper
                 InputDispatcher.AutoKeyboard();
             }
 
-            bool switched = gpuControl.AutoGPUMode(delay: 1000);
-            if (!switched)
+            // Lite mode: GPU auto switching only runs when gpu_control is enabled
+            bool switched = false;
+            if (AppConfig.IsGPUControlEnabled())
             {
-                gpuControl.InitGPUMode();
-                if (init) gpuControl.CheckStandardHalfState();
-                ScreenControl.AutoScreen();
+                switched = gpuControl.AutoGPUMode(delay: 1000);
+                if (!switched)
+                {
+                    gpuControl.InitGPUMode();
+                    if (init) gpuControl.CheckStandardHalfState();
+                }
             }
+            if (!switched) ScreenControl.AutoScreen();
 
             ScreenControl.InitMiniled();
             VisualControl.InitBrightness();
@@ -397,7 +404,8 @@ namespace GHelper
             if (e.Mode == PowerModes.Suspend)
             {
                 Logger.WriteLine("Power Mode Changed:" + e.Mode.ToString());
-                gpuControl.StandardModeFix();
+                // Lite mode: never force GPU mode on suspend unless gpu_control is enabled
+                if (AppConfig.IsGPUControlEnabled()) gpuControl.StandardModeFix();
                 modeControl.ShutdownReset();
                 InputDispatcher.ShutdownStatusLed();
                 XGM.NotifyShutdown();

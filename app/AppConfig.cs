@@ -836,5 +836,22 @@ public static class AppConfig
         return IsNotFalse("standby_networking");
     }
 
+    // Lite switches: risky hardware control is disabled by default for safety.
+    // Only an explicit 1 in config.json (gpu_control / fan_control / power_control) enables it.
+    public static bool IsGPUControlEnabled()
+    {
+        return Get("gpu_control") == 1;
+    }
+
+    public static bool IsFanControlEnabled()
+    {
+        return Get("fan_control") == 1;
+    }
+
+    public static bool IsPowerControlEnabled()
+    {
+        return Get("power_control") == 1;
+    }
+
 
 }
