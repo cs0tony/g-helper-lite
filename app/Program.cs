@@ -115,8 +115,10 @@ namespace GHelper
 
             Application.EnableVisualStyles();
 
-            // Lite mode: skip GPU control initialisation unless gpu_control is enabled
-            if (AppConfig.IsGPUControlEnabled()) HardwareControl.RecreateGpuControl();
+            // Lite mode: always initialise the GPU monitoring handle (temps/usage/power stay
+            // available with gpu_control off). Hardware writes are short-circuited inside
+            // the Gpu module itself via AppConfig.IsGPUControlEnabled().
+            HardwareControl.RecreateGpuControl();
 
             trayIcon = new NotifyIcon
             {
