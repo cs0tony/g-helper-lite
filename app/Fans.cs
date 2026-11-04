@@ -303,8 +303,29 @@ namespace GHelper
 
             if (!Program.acpi.IsSupported(AsusACPI.DevsCPUFanCurve)) buttonCalibrate.Visible = false;
 
+            // Lite mode: hide hardware-write controls even if the form gets instantiated (defense in depth)
+            if (!AppConfig.IsFanControlEnabled())
+            {
+                buttonCalibrate.Visible = false;
+                buttonReset.Visible = false;
+                checkApplyFans.Visible = false;
+                panelHysteresis.Visible = false;
+            }
+            if (!AppConfig.IsPowerControlEnabled())
+            {
+                checkApplyPower.Visible = false;
+                buttonAdvanced.Visible = false;
+                panelPawnIO.Visible = false;
+                panelDownload.Visible = false;
+            }
+            if (!AppConfig.IsGPUControlEnabled())
+            {
+                buttonGPU.Visible = false;
+                panelGPUPower.Visible = false;
+            }
+
             gpuPowerBase = Program.acpi.DeviceGet(AsusACPI.GPU_BASE);
-            panelGPUPower.Visible = isGPUPower;
+            panelGPUPower.Visible = isGPUPower && AppConfig.IsGPUControlEnabled();
 
             FormClosed += Fans_FormClosed;
             Activated  += (_, _) => VisualiseAdvanced();
@@ -335,11 +356,13 @@ namespace GHelper
 
         private void ButtonDownload_Click(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsFanControlEnabled()) return;
             Process.Start(new ProcessStartInfo("https://pawnio.eu/") { UseShellExecute = true });
         }
 
         private void ButtonCalibrate_Click(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsFanControlEnabled()) return;
             buttonCalibrate.Enabled = false;
             fanSensorControl.StartCalibration();
         }
@@ -370,6 +393,7 @@ namespace GHelper
 
         private void CheckApplyUV_Click(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsPowerControlEnabled()) return;
             AppConfig.SetMode("auto_uv", checkApplyUV.Checked ? 1 : 0);
             modeControl.AutoRyzen();
         }
@@ -440,6 +464,7 @@ namespace GHelper
 
         private void ButtonApplyAdvanced_Click(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsPowerControlEnabled()) return;
             string result = modeControl.SetRyzen(true);
             checkApplyUV.Enabled = true;
             ShowLabelRisky(result);
@@ -447,6 +472,7 @@ namespace GHelper
 
         private void ButtonReadLimits_Click(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsPowerControlEnabled()) return;
             ShowLabelRisky(modeControl.ReadRyzenLimits());
         }
 
@@ -459,6 +485,15 @@ namespace GHelper
 
         public void InitUV()
         {
+
+            // Lite mode: undervolting UI belongs to power control
+            if (!AppConfig.IsPowerControlEnabled())
+            {
+                buttonAdvanced.Visible = false;
+                panelPawnIO.Visible = false;
+                panelDownload.Visible = false;
+                return;
+            }
 
             //if (!ProcessHelper.IsUserAdministrator()) return;
 
@@ -482,6 +517,18 @@ namespace GHelper
 
         private void VisualiseAdvanced()
         {
+            // Lite mode: never probe PawnIO (driver load) or show undervolting panels
+            if (!AppConfig.IsPowerControlEnabled())
+            {
+                panelPawnIO.Visible = false;
+                panelDownload.Visible = false;
+                panelTitleAdvanced.Visible = false;
+                panelUV.Visible = false;
+                panelUViGPU.Visible = false;
+                labelRisky.Visible = false;
+                return;
+            }
+
             bool available = ModeControl.IsPawnAvailable();
             bool installed = available || ModeControl.IsPawnInstalled();
 
@@ -504,6 +551,8 @@ namespace GHelper
 
         private void AdvancedScroll()
         {
+            if (!AppConfig.IsPowerControlEnabled()) return;
+
             AppConfig.SetMode("auto_uv", 0);
             checkApplyUV.Enabled = checkApplyUV.Checked = false;
 
@@ -597,16 +646,19 @@ namespace GHelper
 
         private void TrackGPU_MouseUp(object? sender, MouseEventArgs e)
         {
+            if (!AppConfig.IsGPUControlEnabled()) return;
             modeControl.SetGPUPower();
         }
 
         private void TrackGPUClocks_MouseUp(object? sender, MouseEventArgs e)
         {
+            if (!AppConfig.IsGPUControlEnabled()) return;
             modeControl.SetGPUClocks(true);
         }
 
         private void InitGPUPower()
         {
+            if (!AppConfig.IsGPUControlEnabled()) return;
             if (!isGPUPower) return;
 
             int maxGPUPower = NvidiaSmi.GetMaxGPUPower();
@@ -636,6 +688,14 @@ namespace GHelper
 
         public void InitGPU()
         {
+            // Lite mode: GPU boost/clocks/temp targets are GPU control
+            if (!AppConfig.IsGPUControlEnabled())
+            {
+                gpuVisible = false;
+                buttonGPU.Visible = false;
+                return;
+            }
+
             Task.Run(() =>
             {
                 if (Program.acpi.DeviceGet(AsusACPI.GPUEco) == 1)
@@ -748,6 +808,13 @@ namespace GHelper
 
         private void InitHysteresis()
         {
+            // Lite mode: hysteresis is a fan-curve write
+            if (!AppConfig.IsFanControlEnabled())
+            {
+                panelHysteresis.Visible = false;
+                return;
+            }
+
             var defaults = Program.acpi.GetFanHysteresis();
             if (defaults.up < 0 || defaults.down < 0)
             {
@@ -770,6 +837,7 @@ namespace GHelper
 
         private void TrackHysteresis_Scroll(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsFanControlEnabled()) return;
             AppConfig.SetMode("hysteresis_up", trackHysteresisUp.Value);
             AppConfig.SetMode("hysteresis_down", trackHysteresisDown.Value);
             VisualiseHysteresis();
@@ -777,12 +845,14 @@ namespace GHelper
 
         private void TrackHysteresis_MouseUp(object? sender, MouseEventArgs e)
         {
+            if (!AppConfig.IsFanControlEnabled()) return;
             Program.acpi.SetFanHysteresis(trackHysteresisUp.Value, trackHysteresisDown.Value);
         }
 
 
         private void trackGPUClockLimit_Scroll(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsGPUControlEnabled()) return;
 
             int maxClock = (int)Math.Round((float)trackGPUClockLimit.Value / 5) * 5;
 
@@ -793,6 +863,7 @@ namespace GHelper
 
         private void trackGPU_Scroll(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsGPUControlEnabled()) return;
             if (sender is null) return;
             TrackBar track = (TrackBar)sender;
             track.Value = (int)Math.Round((float)track.Value / 5) * 5;
@@ -807,6 +878,8 @@ namespace GHelper
 
         private void trackGPUPower_Scroll(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsGPUControlEnabled()) return;
+
             AppConfig.SetMode("gpu_boost", trackGPUBoost.Value);
             AppConfig.SetMode("gpu_temp", trackGPUTemp.Value);
 
@@ -935,6 +1008,7 @@ namespace GHelper
 
         private void TrackPower_MouseUp(object? sender, MouseEventArgs e)
         {
+            if (!AppConfig.IsPowerControlEnabled()) return;
             Task.Run(() =>
             {
                 modeControl.AutoPower(true);
@@ -944,6 +1018,7 @@ namespace GHelper
 
         private void TrackPower_KeyUp(object? sender, KeyEventArgs e)
         {
+            if (!AppConfig.IsPowerControlEnabled()) return;
             Task.Run(() =>
             {
                 modeControl.AutoPower(true);
@@ -952,9 +1027,17 @@ namespace GHelper
 
         public void InitPowerPlan()
         {
-            int boost = PowerNative.GetCPUBoost();
-            if (boost >= 0)
-                comboBoost.SelectedIndex = Math.Min(boost, comboBoost.Items.Count - 1);
+            // Lite mode: CPU boost combo is power control
+            if (!AppConfig.IsPowerControlEnabled())
+            {
+                panelBoost.Visible = panelBoostTitle.Visible = false;
+            }
+            else
+            {
+                int boost = PowerNative.GetCPUBoost();
+                if (boost >= 0)
+                    comboBoost.SelectedIndex = Math.Min(boost, comboBoost.Items.Count - 1);
+            }
 
             string powerMode = PowerNative.GetPowerMode();
             bool batterySaver = PowerNative.GetBatterySaverStatus();
@@ -981,6 +1064,8 @@ namespace GHelper
 
         private void ComboBoost_Changed(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsPowerControlEnabled()) return;
+
             if (AppConfig.GetMode("auto_boost") != comboBoost.SelectedIndex)
             {
                 PowerNative.SetCPUBoost(comboBoost.SelectedIndex);
@@ -990,6 +1075,7 @@ namespace GHelper
 
         private void CheckApplyPower_Click(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsPowerControlEnabled()) return;
             if (sender is null) return;
             CheckBox chk = (CheckBox)sender;
 
@@ -1000,6 +1086,7 @@ namespace GHelper
 
         private void CheckApplyFans_Click(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsFanControlEnabled()) return;
             if (sender is null) return;
             CheckBox chk = (CheckBox)sender;
 
@@ -1040,6 +1127,15 @@ namespace GHelper
 
         public void InitPower()
         {
+
+            // Lite mode: PPT sliders / temp target are power control
+            if (!AppConfig.IsPowerControlEnabled())
+            {
+                panelTotal.Visible = panelCPU.Visible = panelFast.Visible = panelSlow.Visible = false;
+                panelCrossLoad.Visible = panelGPUtoCPU.Visible = panelCPUTemp.Visible = false;
+                panelApplyPower.Visible = panelTitleCPU.Visible = false;
+                return;
+            }
 
             bool modeA = Program.acpi.IsSupported(AsusACPI.PPT_APUA0) || CpuInfo.IsAMD;
             bool modeB0 = Program.acpi.IsAllAmdPPT();
@@ -1138,6 +1234,8 @@ namespace GHelper
 
         private void SavePower()
         {
+            if (!AppConfig.IsPowerControlEnabled()) return;
+
             labelTotal.Text = trackTotal.Value.ToString() + "W";
             labelSlow.Text = trackSlow.Value.ToString() + "W";
             labelCPU.Text = trackCPU.Value.ToString() + "W";
@@ -1159,6 +1257,7 @@ namespace GHelper
 
         private void TrackTotal_Scroll(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsPowerControlEnabled()) return;
             if (trackTotal.Value > trackSlow.Value) trackSlow.Value = trackTotal.Value;
             if (trackTotal.Value > trackFast.Value) trackFast.Value = trackTotal.Value;
             if (trackTotal.Value < trackCPU.Value) trackCPU.Value = trackTotal.Value;
@@ -1167,6 +1266,7 @@ namespace GHelper
 
         private void TrackSlow_Scroll(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsPowerControlEnabled()) return;
             if (trackSlow.Value < trackTotal.Value) trackTotal.Value = trackSlow.Value;
             if (trackSlow.Value > trackFast.Value) trackFast.Value = trackSlow.Value;
             SavePower();
@@ -1174,6 +1274,7 @@ namespace GHelper
 
         private void TrackFast_Scroll(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsPowerControlEnabled()) return;
             if (trackFast.Value < trackSlow.Value) trackSlow.Value = trackFast.Value;
             if (trackFast.Value < trackTotal.Value) trackTotal.Value = trackFast.Value;
             SavePower();
@@ -1181,12 +1282,14 @@ namespace GHelper
 
         private void TrackCPU_Scroll(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsPowerControlEnabled()) return;
             if (trackCPU.Value > trackTotal.Value) trackTotal.Value = trackCPU.Value;
             SavePower();
         }
 
         private void TrackCross_Scroll(object? sender, EventArgs e)
         {
+            if (!AppConfig.IsPowerControlEnabled()) return;
             trackGPUtoCPU.Value -= trackGPUtoCPU.Value % AsusACPI.StepGPUtoCPU;
             SavePower();
         }
@@ -1322,45 +1425,52 @@ namespace GHelper
         private void ButtonReset_Click(object? sender, EventArgs e)
         {
 
-            LoadProfile(seriesCPU, AsusFan.CPU, true);
-            LoadProfile(seriesGPU, AsusFan.GPU, true);
+            if (AppConfig.IsFanControlEnabled())
+            {
+                LoadProfile(seriesCPU, AsusFan.CPU, true);
+                LoadProfile(seriesGPU, AsusFan.GPU, true);
 
-            if (AppConfig.Is("mid_fan"))
-                LoadProfile(seriesMid, AsusFan.Mid, true);
+                if (AppConfig.Is("mid_fan"))
+                    LoadProfile(seriesMid, AsusFan.Mid, true);
 
-            if (AppConfig.Is("xgm_fan"))
-                LoadProfile(seriesXGM, AsusFan.XGM, true);
+                if (AppConfig.Is("xgm_fan"))
+                    LoadProfile(seriesXGM, AsusFan.XGM, true);
 
-            checkApplyFans.Checked = false;
+                checkApplyFans.Checked = false;
+                AppConfig.SetMode("auto_apply", 0);
+            }
+
             checkApplyPower.Checked = false;
             seriesCPU.Color = Color.Gray;
             seriesGPU.Color = Color.Gray;
             seriesMid.Color = Color.Gray;
             seriesXGM.Color = Color.Gray;
 
-            AppConfig.SetMode("auto_apply", 0);
-            AppConfig.SetMode("auto_apply_power", 0);
+            if (AppConfig.IsPowerControlEnabled())
+            {
+                AppConfig.SetMode("auto_apply_power", 0);
 
-            trackUV.Value = CpuInfo.MaxCPUUV;
-            trackUViGPU.Value = CpuInfo.MaxIGPUUV;
-            trackTemp.Value = CpuInfo.DefaultTemp;
+                trackUV.Value = CpuInfo.MaxCPUUV;
+                trackUViGPU.Value = CpuInfo.MaxIGPUUV;
+                trackTemp.Value = CpuInfo.DefaultTemp;
 
-            trackCrossLoad.Value = AsusACPI.MaxCrossLoad;
-            trackGPUtoCPU.Value = AsusACPI.MaxGPUtoCPU;
-            trackCPUTemp.Value = AsusACPI.MaxCPUTemp;
-            SavePower();
+                trackCrossLoad.Value = AsusACPI.MaxCrossLoad;
+                trackGPUtoCPU.Value = AsusACPI.MaxGPUtoCPU;
+                trackCPUTemp.Value = AsusACPI.MaxCPUTemp;
+                SavePower();
 
-            AdvancedScroll();
-            AppConfig.RemoveMode("cpu_temp");
+                AdvancedScroll();
+                AppConfig.RemoveMode("cpu_temp");
+            }
 
             modeControl.ResetPerformanceMode();
 
             InitPowerPlan();
 
-            XGM.Reset();
+            if (AppConfig.IsFanControlEnabled()) XGM.Reset();
 
 
-            if (gpuVisible)
+            if (gpuVisible && AppConfig.IsGPUControlEnabled())
             {
                 trackGPUClockLimit.Value = NvidiaGpuControl.MaxClockLimit;
                 trackGPUCore.Value = 0;
@@ -1387,7 +1497,7 @@ namespace GHelper
                 modeControl.SetGPUPower();
             }
 
-            if (panelHysteresis.Visible)
+            if (panelHysteresis.Visible && AppConfig.IsFanControlEnabled())
             {
                 AppConfig.RemoveMode("hysteresis_up");
                 AppConfig.RemoveMode("hysteresis_down");
@@ -1398,6 +1508,9 @@ namespace GHelper
 
         private void Chart_Save()
         {
+            // Lite mode: applying a fan curve writes hardware
+            if (!AppConfig.IsFanControlEnabled()) return;
+
             curPoint = null;
             curIndex = -1;
             labelTip.Visible = false;

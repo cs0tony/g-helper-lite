@@ -23,6 +23,9 @@ namespace GHelper.Mode
 
         private static RyzenSmuService? GetSmu()
         {
+            // Lite mode: never load the PawnIO kernel driver unless power control is enabled
+            if (!AppConfig.IsPowerControlEnabled()) return null;
+
             lock (_smuLock)
             {
                 if (_smu != null && _smu.IsInitialized) return _smu;
@@ -51,6 +54,9 @@ namespace GHelper.Mode
 
         public ModeControl()
         {
+            // Lite mode: no startup UV/temp-limit recovery timer
+            if (!AppConfig.IsPowerControlEnabled()) return;
+
             int reapplyTime = AppConfig.Get("reapply_time", IsReapplyTempRequired() ? 30 : 0);
             if (reapplyTime > 0)
             {
@@ -196,8 +202,8 @@ namespace GHelper.Mode
                 if (AppConfig.IsAutoStandbyNetworking()) PowerNative.SetConnectivityInStandby();
             }
 
-            // CPU Boost setting override
-            if (AppConfig.GetMode("auto_boost") != -1)
+            // CPU Boost setting override (power control)
+            if (AppConfig.IsPowerControlEnabled() && AppConfig.GetMode("auto_boost") != -1)
                     PowerNative.SetCPUBoost(AppConfig.GetMode("auto_boost"));
 
             settings.FansInit();
@@ -230,6 +236,9 @@ namespace GHelper.Mode
 
         public void AutoFans(bool force = false)
         {
+            // Lite mode: never write fan curves or fan hysteresis
+            if (!AppConfig.IsFanControlEnabled()) return;
+
             customFans = false;
 
             if (AppConfig.IsApplyFans() || force)
@@ -295,6 +304,8 @@ namespace GHelper.Mode
 
         public void AutoPower(bool launchAsAdmin = false)
         {
+            // Lite mode: never write power limits / temp targets / UV
+            if (!AppConfig.IsPowerControlEnabled()) return;
 
             customPower = 0;
 
@@ -326,6 +337,9 @@ namespace GHelper.Mode
 
         public void SetRyzenPower(bool init = false)
         {
+            // Lite mode: SMU power-limit writes are power control
+            if (!AppConfig.IsPowerControlEnabled()) return;
+
             if (init) _ryzenPower = true;
 
             if (!_ryzenPower) return;
@@ -348,6 +362,8 @@ namespace GHelper.Mode
 
         public void SetPower(bool launchAsAdmin = false)
         {
+            // Lite mode: never write SPL/sPPT/fPPT limits (keeps customPower at 0)
+            if (!AppConfig.IsPowerControlEnabled()) return;
 
             bool allAMD = Program.acpi.IsAllAmdPPT();
             bool isAMD = CpuInfo.IsAMD;
@@ -407,6 +423,9 @@ namespace GHelper.Mode
 
         public void SetCrossPower()
         {
+            // Lite mode: never write crossload / GPU-to-CPU / CPU temp-target limits
+            if (!AppConfig.IsPowerControlEnabled()) return;
+
             int gpucpu = AppConfig.GetMode("limit_gpucpu");
             int crossload = AppConfig.GetMode("limit_crossload");
             int cputemp = AppConfig.GetMode("limit_cputemp");
@@ -423,6 +442,9 @@ namespace GHelper.Mode
 
         public void SetGPUClocks(bool launchAsAdmin = true, bool reset = false)
         {
+            // Lite mode: GPU clock offsets/limits are GPU control
+            if (!AppConfig.IsGPUControlEnabled()) return;
+
             Task.Run(() =>
             {
 
@@ -457,6 +479,8 @@ namespace GHelper.Mode
 
         public void SetGPUPower()
         {
+            // Lite mode: GPU boost/temp/power-target writes are GPU control
+            if (!AppConfig.IsGPUControlEnabled()) return;
 
             int gpu_boost = AppConfig.GetMode("gpu_boost");
             int gpu_temp = AppConfig.GetMode("gpu_temp");
@@ -481,6 +505,9 @@ namespace GHelper.Mode
 
         public SmuStatus? SetCPUTemp(int cpuTemp, bool log = false)
         {
+            // Lite mode: temp target is power control
+            if (!AppConfig.IsPowerControlEnabled()) return null;
+
             if (cpuTemp < CpuInfo.MinTemp || cpuTemp > CpuInfo.DefaultTemp) return null;
             if (cpuTemp == CpuInfo.DefaultTemp && _cpuTemp == CpuInfo.DefaultTemp) return null;
 
@@ -494,6 +521,9 @@ namespace GHelper.Mode
 
         public void SetUV(int cpuUV)
         {
+            // Lite mode: undervolting is power control
+            if (!AppConfig.IsPowerControlEnabled()) return;
+
             if (!CpuInfo.IsSupportedUV()) return;
 
             if (cpuUV >= CpuInfo.MinCPUUV && cpuUV <= CpuInfo.MaxCPUUV)
@@ -508,6 +538,9 @@ namespace GHelper.Mode
 
         public void SetUViGPU(int igpuUV)
         {
+            // Lite mode: undervolting is power control
+            if (!AppConfig.IsPowerControlEnabled()) return;
+
             if (!CpuInfo.IsSupportedUViGPU()) return;
 
             if (igpuUV >= CpuInfo.MinIGPUUV && igpuUV <= CpuInfo.MaxIGPUUV)
@@ -522,6 +555,9 @@ namespace GHelper.Mode
 
         public string SetRyzen(bool launchAsAdmin = false)
         {
+            // Lite mode: no UV/temp writes and no admin-elevation prompt
+            if (!AppConfig.IsPowerControlEnabled()) return string.Empty;
+
             if (!ProcessHelper.IsUserAdministrator())
             {
                 if (launchAsAdmin) ProcessHelper.RunAsAdmin("uv");
@@ -584,6 +620,9 @@ namespace GHelper.Mode
 
         public string ReadRyzenLimits()
         {
+            // Lite mode: SMU reads require the PawnIO driver
+            if (!AppConfig.IsPowerControlEnabled()) return string.Empty;
+
             var smu = GetSmu();
             if (smu == null) return string.Empty;
 
@@ -607,6 +646,9 @@ namespace GHelper.Mode
 
         public void ResetRyzen()
         {
+            // Lite mode: nothing to reset (UV/temp were never applied)
+            if (!AppConfig.IsPowerControlEnabled()) return;
+
             if (_cpuUV != 0) SetUV(0);
             if (_igpuUV != 0) SetUViGPU(0);
             if (_cpuTemp != CpuInfo.DefaultTemp) SetCPUTemp(CpuInfo.DefaultTemp, true);
@@ -615,6 +657,9 @@ namespace GHelper.Mode
 
         public void AutoRyzen()
         {
+            // Lite mode: no UV apply/reset path
+            if (!AppConfig.IsPowerControlEnabled()) return;
+
             if (!CpuInfo.IsAMD) return;
 
             if (AppConfig.IsApplyUV()) SetRyzen();
@@ -623,6 +668,9 @@ namespace GHelper.Mode
 
         public void AutoCPUTemp()
         {
+            // Lite mode: no temp-target reapply on session unlock
+            if (!AppConfig.IsPowerControlEnabled()) return;
+
             if (!CpuInfo.IsAMD) return;
             if (!AppConfig.IsApplyUV()) return;
             if (!ProcessHelper.IsUserAdministrator()) return;
