@@ -1,6 +1,10 @@
 ﻿using Microsoft.Win32;
 using System.Runtime.InteropServices;
 
+// Intel iGPU dedicated VRAM segment size: reads/sizes the "DedicatedSegmentSize"
+// registry value under the display class GMM key. Init() is a read-only registry query
+// used by the Extra UI; SetIndex() writes the registry (takes effect after reboot) and is
+// therefore gated behind AppConfig.IsGPUControlEnabled() in lite mode.
 namespace GHelper.Gpu;
 
 public static class IntelVram
@@ -35,6 +39,10 @@ public static class IntelVram
 
     public static void SetIndex(int index)
     {
+        // Lite mode: registry write of the iGPU dedicated VRAM size is a GPU
+        // configuration change -> short-circuit. Init() above stays read-only.
+        if (!AppConfig.IsGPUControlEnabled()) return;
+
         try
         {
             if (index < 1)

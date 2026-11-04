@@ -6,10 +6,27 @@ using System.Diagnostics;
 
 namespace GHelper.Gpu
 {
+    // Lite mode: GPUModeControl still exists because InputDispatcher/Settings dereference it,
+    // but when AppConfig.IsGPUControlEnabled() is false (default) every method that writes
+    // hardware or state (ACPI GPU mode/eco/mux, XGM, process kills, NV service restarts,
+    // event-log polling) short-circuits at the top as the last line of defence.
+    // Read-only monitoring (GPU temperature, usage, power, VRAM) lives in
+    // HardwareControl.GpuControl / NvmlHelper / AmdGpuControl sensors and keeps working.
     public class GPUModeControl
     {
         SettingsForm settings;
 
+        // Static audit (all safe when the switch is off):
+        // - gpuMode stays 0 (= GPUModeEco). Readers: Aura.ApplyGPUColor (cosmetic colour only)
+        //   and internal gated methods. Config key "gpu_mode" stays 0 -> VisualiseIcon shows the
+        //   standard/eco icon; no null risks (plain int).
+        // - gpuExists stays null; only read inside the gated InitGPUMode.
+        // - suspended is written by Settings.cs WndProc (power events) but only read by the
+        //   gated AutoGPUMode; the bool write itself is harmless.
+        // - gpuError stays null; readers are R1-gated VisualiseGPUMode (early return) and
+        //   PictureGPU_Click (early return on null). CheckGpuError is short-circuited so it
+        //   stays null.
+        // - nvRestartPending stays false; only read by the gated SetGPUEco task.
         public static int gpuMode;
         public static bool? gpuExists = null;
 
@@ -18,11 +35,17 @@ namespace GHelper.Gpu
 
         public GPUModeControl(SettingsForm settingsForm)
         {
+            // Constructor intentionally does nothing but store the form reference:
+            // no event subscriptions, no timers, no hardware access (verified).
             settings = settingsForm;
         }
 
         public void InitGPUMode()
         {
+            // Probes ACPI GPUEco/GPUMux, can force-fix the eco half-state via ACPI write,
+            // updates gpu_mode config and aura colour. Write path -> short-circuit.
+            if (!AppConfig.IsGPUControlEnabled()) return;
+
             if (AppConfig.NoGpu())
             {
                 settings.HideGPUModes(false);
@@ -79,6 +102,10 @@ namespace GHelper.Gpu
 
         public void SetGPUMode(int GPUMode, int auto = 0)
         {
+            // Writes ACPI GPUMux/GPUEco, can trigger "shutdown /r" (Ultimate mode switch).
+            // Final landing point of InputDispatcher hotkeys (Alt+F3/F14/F15) and Settings
+            // buttons -> must short-circuit itself.
+            if (!AppConfig.IsGPUControlEnabled()) return;
 
             int CurrentGPU = AppConfig.Get("gpu_mode");
             AppConfig.Set("gpu_auto", auto);
@@ -163,6 +190,9 @@ namespace GHelper.Gpu
 
         public void SetGPUEco(int eco)
         {
+            // Writes ACPI GPUEco, kills GPU apps, restarts NV services, recreates the GPU
+            // control handle and reapplies performance modes. Write path -> short-circuit.
+            if (!AppConfig.IsGPUControlEnabled()) return;
 
             settings.LockGPUModes();
 
@@ -240,6 +270,10 @@ namespace GHelper.Gpu
 
         public bool AutoGPUMode(bool optimized = false, int delay = 0)
         {
+            // Auto Eco/Standard switching: reads ACPI and ends in SetGPUEco/SetGPUMode writes.
+            // Safe default is false ("no switch performed") — callers just skip the re-init
+            // branch and keep running ScreenControl.AutoScreen().
+            if (!AppConfig.IsGPUControlEnabled()) return false;
 
             bool GpuAuto = AppConfig.Is("gpu_auto");
             bool ForceGPU = AppConfig.IsForceSetGPUMode() && !GpuAuto;
@@ -301,6 +335,10 @@ namespace GHelper.Gpu
 
         public void ToggleXGM(bool silent = false)
         {
+            // XG Mobile eGPU toggle: writes ACPI GPUXG, resets/initialises XGM and recreates
+            // the GPU control handle. InputDispatcher XGM hotkey lands here unguarded ->
+            // must short-circuit itself.
+            if (!AppConfig.IsGPUControlEnabled()) return;
 
             Task.Run(async () =>
             {
@@ -354,6 +392,10 @@ namespace GHelper.Gpu
 
         public void KillGPUApps()
         {
+            // Destructive: kills processes running on the dGPU. Not a monitoring read ->
+            // short-circuit (Settings "Stop GPU apps" button and eco path land here).
+            if (!AppConfig.IsGPUControlEnabled()) return;
+
             if (HardwareControl.GpuControl is not null)
             {
                 HardwareControl.GpuControl.KillGPUApps();
@@ -362,11 +404,19 @@ namespace GHelper.Gpu
 
         public void CaptureNvBootState()
         {
+            // Pure read (ACPI), but its only output (nvRestartPending) is consumed by the
+            // gated SetGPUEco — short-circuited for uniformity; nvRestartPending stays false.
+            if (!AppConfig.IsGPUControlEnabled()) return;
+
             nvRestartPending = Program.acpi.IsNVidiaGPU() && Program.acpi.DeviceGet(AsusACPI.GPUEco) == 1;
         }
 
         public void CheckStandardHalfState()
         {
+            // Standard force-fix writes ACPI GPUEco and recreates the GPU control handle
+            // -> write path, short-circuit (R1 already gates the Program.cs call site).
+            if (!AppConfig.IsGPUControlEnabled()) return;
+
             if (gpuMode != AsusACPI.GPUModeStandard || HardwareControl.GpuControl is not null) return;
 
             Logger.WriteLine("Standard half-state");
@@ -382,6 +432,10 @@ namespace GHelper.Gpu
 
         public void StandardModeFix()
         {
+            // Forces Standard mode on shutdown/suspend via ACPI write. R1 gates the
+            // Program.cs call sites; short-circuited here as the last line of defence.
+            if (!AppConfig.IsGPUControlEnabled()) return;
+
             if (!AppConfig.IsStandardModeFix()) return;
             if (Program.acpi.DeviceGet(AsusACPI.GPUMux) == 0) return; // Ultimate mode
 
@@ -391,14 +445,23 @@ namespace GHelper.Gpu
 
         public static string? gpuError = null;
 
-        public static void CheckGpuError() => Task.Run(() =>
+        public static void CheckGpuError()
         {
-            string? error = DeviceHelper.GetGpuError();
-            if (gpuError == error) return;
-            gpuError = error;
-            if (error != null) Logger.WriteLine(error);
-            Program.settingsForm.VisualiseGPUMode();
-        });
+            // Pure read (Windows event log) + visualisation, but it also drives the gpuError
+            // UI state. Short-circuited for uniformity: gpuError stays null, which every
+            // reader (R1-gated VisualiseGPUMode, PictureGPU_Click) already handles safely,
+            // and the event-log polling stops.
+            if (!AppConfig.IsGPUControlEnabled()) return;
 
+            Task.Run(() =>
+            {
+                string? error = DeviceHelper.GetGpuError();
+                if (gpuError == error) return;
+                gpuError = error;
+                if (error != null) Logger.WriteLine(error);
+                Program.settingsForm.VisualiseGPUMode();
+            });
+
+        }
     }
 }

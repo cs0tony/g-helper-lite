@@ -9,6 +9,11 @@ using static NvAPIWrapper.Native.GPU.Structures.PerformanceStates20InfoV1;
 
 namespace GHelper.Gpu.NVidia;
 
+// Lite mode: all read-only queries (temperature, usage, power, VRAM, clocks, perf state)
+// stay functional so GPU monitoring keeps working. Every hardware write (clock/memory
+// offsets via NVAPI, clock-limit lock via nvidia-smi, process kills, NV service restarts)
+// short-circuits when AppConfig.IsGPUControlEnabled() is false — this is the last line of
+// defence beyond the gated call sites (ModeControl.SetGPUClocks, Fans panel).
 public class NvidiaGpuControl : IGpuControl
 {
 
@@ -162,6 +167,8 @@ public class NvidiaGpuControl : IGpuControl
 
     public void KillGPUApps()
     {
+        // Lite mode: killing GPU processes is a destructive write, not a monitoring read.
+        if (!AppConfig.IsGPUControlEnabled()) return;
         if (!IsValid) return;
         PhysicalGPU internalGpu = _internalGpu!;
 
@@ -268,6 +275,10 @@ public class NvidiaGpuControl : IGpuControl
 
     public int SetMaxGPUClock(int clock)
     {
+        // Lite mode: nvidia-smi -lgc/-rgc clock-limit lock is a hardware write
+        // (dynamic boost limit) -> short-circuit. 0 = "nothing changed" for callers
+        // that compare the status and skip admin relaunch.
+        if (!AppConfig.IsGPUControlEnabled()) return 0;
 
         if (clock < MinClockLimit || clock >= MaxClockLimit) clock = 0;
 
@@ -284,12 +295,16 @@ public class NvidiaGpuControl : IGpuControl
 
     public static void RestartNvContainer()
     {
+        // Lite mode: service restarts are only meaningful for GPU mode switching
+        // (gated SetGPUEco); blocked defensively here as well.
+        if (!AppConfig.IsGPUControlEnabled()) return;
         if (!ProcessHelper.IsUserAdministrator()) return;
         RunPowershellCommand(@"Restart-Service -Name 'NvContainerLocalSystem' -Force", 30000);
     }
 
     public static void RestartNVService()
     {
+        if (!AppConfig.IsGPUControlEnabled()) return;
         if (!ProcessHelper.IsUserAdministrator()) return;
         RunPowershellCommand(@"Restart-Service -Name 'NVDisplay.ContainerLocalSystem' -Force", 30000);
         RunPowershellCommand(@"Restart-Service -Name 'NvContainerLocalSystem' -Force", 30000);
@@ -297,6 +312,7 @@ public class NvidiaGpuControl : IGpuControl
 
     public static void StopNVService()
     {
+        if (!AppConfig.IsGPUControlEnabled()) return;
         if (!ProcessHelper.IsUserAdministrator()) return;
         RunPowershellCommand(@"Stop-Service -Name 'NvContainerLocalSystem' -Force", 30000);
         RunPowershellCommand(@"Stop-Service -Name 'NVDisplay.ContainerLocalSystem' -Force", 30000);
@@ -304,6 +320,10 @@ public class NvidiaGpuControl : IGpuControl
 
     public int SetClocks(int core, int memory)
     {
+        // Lite mode: core/memory clock offset (overclock/undervolt) via NVAPI
+        // SetPerformanceStates20 is a hardware write -> short-circuit.
+        // 0 = "not applied" so ModeControl skips its admin-relaunch path.
+        if (!AppConfig.IsGPUControlEnabled()) return 0;
 
         if (core < MinCoreOffset || core > MaxCoreOffset) return 0;
         if (memory < MinMemoryOffset || memory > MaxMemoryOffset) return 0;

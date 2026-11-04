@@ -71,6 +71,11 @@ public class AmdGpuControl : IGpuControl
 
     public AmdGpuControl()
     {
+        // Lite mode: ADL2 init is deliberately NOT gated on IsGPUControlEnabled().
+        // It is lazy (only on RecreateGpuControl or the HardwareControl.AmdApu() fallback),
+        // registers no driver callbacks, and is the backbone of read-only AMD sensor
+        // monitoring (GetiGpuSensors / GetiGpuUse / GetiGpuPower / GetVramInfo) which must
+        // keep working with the switch off. Only the write methods below are short-circuited.
         if ((AppConfig.NoGpu() && !AppConfig.IsAMDiGPU()) || !Adl2.Load()) return;
 
         try
@@ -288,6 +293,8 @@ public class AmdGpuControl : IGpuControl
 
     public bool SetVariBright(int enabled)
     {
+        // Lite mode: ADL2 VariBright enable/disable is a hardware write -> short-circuit.
+        if (!AppConfig.IsGPUControlEnabled()) return false;
         if (_adlContextHandle == nint.Zero) return false;
 
         ADLAdapterInfo? iGPU = FindByType(ADLAsicFamilyType.Integrated);
@@ -360,6 +367,9 @@ public class AmdGpuControl : IGpuControl
 
     public bool DisableOledPowerOptimization()
     {
+        // Lite mode: ADL2_Display_SCE_State_Set is a display/GPU write -> short-circuit.
+        // The vendor OLED power optimisation simply stays in its default (enabled) state.
+        if (!AppConfig.IsGPUControlEnabled()) return false;
         if (_sceDisplayIndex is null or SceUnsupported) return false;
 
         try
@@ -406,6 +416,9 @@ public class AmdGpuControl : IGpuControl
 
     public int SetFPSLimit(int limit)
     {
+        // Lite mode: ADL2_FPS_Settings_Set is a GPU write (frame limiter) -> short-circuit.
+        // 0 = "not set"; the Ally caller only logs and visualises the requested value.
+        if (!AppConfig.IsGPUControlEnabled()) return 0;
         if (_adlContextHandle == nint.Zero || _iGPU == null) return -1;
 
         ADLFPSSettingsInput settings = new ADLFPSSettingsInput();
@@ -431,6 +444,8 @@ public class AmdGpuControl : IGpuControl
 
     public void KillGPUApps()
     {
+        // Lite mode: killing GPU processes is a destructive write, not a monitoring read.
+        if (!AppConfig.IsGPUControlEnabled()) return;
 
         if (!IsValid) return;
 

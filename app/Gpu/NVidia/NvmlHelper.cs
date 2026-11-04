@@ -1,5 +1,8 @@
 using System.Runtime.InteropServices;
 
+// Lite mode: NVML is used for read-only monitoring only (GPU temperature, power draw,
+// VRAM info). Init/Shutdown just manage the NVML library handle — no hardware writes —
+// so this helper stays fully functional when gpu control is disabled.
 public static class NvmlHelper
 {
     const string NvmlDll = "nvml.dll";

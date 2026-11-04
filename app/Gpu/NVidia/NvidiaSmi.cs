@@ -2,6 +2,9 @@ using PawnIO;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
+// Lite mode: read-only nvidia-smi queries (max power limit report) plus model-based
+// defaults. No hardware writes here — nvidia-smi write commands (-lgc/-rgc) are issued
+// only from NvidiaGpuControl.SetMaxGPUClock, which is gated by IsGPUControlEnabled().
 public static class NvidiaSmi
 {
 
