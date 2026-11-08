@@ -312,6 +312,18 @@
   <data name="BootSound" xml:space="preserve">
     <value>Boot Sound</value>
   </data>
+  <data name="LiteGPUControl" xml:space="preserve">
+    <value>GPU control (mode switching / overclocking)</value>
+  </data>
+  <data name="LiteFanControl" xml:space="preserve">
+    <value>Fan curve control</value>
+  </data>
+  <data name="LitePowerControl" xml:space="preserve">
+    <value>CPU power limits / temp targets / undervolt</value>
+  </data>
+  <data name="LiteRestartPrompt" xml:space="preserve">
+    <value>Takes effect after restarting G-Helper. Restart now?</value>
+  </data>
   <data name="BacklightDown" xml:space="preserve">
     <value>Backlight Down</value>
   </data>

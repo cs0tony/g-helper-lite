@@ -177,6 +177,19 @@ namespace GHelper
             labelAPUMem.Text = Properties.Strings.APUMemory;
             labelCores.Text = Properties.Strings.CPUCoresConfiguration;
 
+            // Lite module switches: checked = module enabled (writes allowed)
+            checkLiteGPU.Text = Properties.Strings.LiteGPUControl;
+            checkLiteFan.Text = Properties.Strings.LiteFanControl;
+            checkLitePower.Text = Properties.Strings.LitePowerControl;
+
+            checkLiteGPU.Checked = AppConfig.IsGPUControlEnabled();
+            checkLiteFan.Checked = AppConfig.IsFanControlEnabled();
+            checkLitePower.Checked = AppConfig.IsPowerControlEnabled();
+
+            checkLiteGPU.CheckedChanged += delegate { LiteToggle("gpu_control", checkLiteGPU.Checked); };
+            checkLiteFan.CheckedChanged += delegate { LiteToggle("fan_control", checkLiteFan.Checked); };
+            checkLitePower.CheckedChanged += delegate { LiteToggle("power_control", checkLitePower.Checked); };
+
             labelOptimalBrightness.Text = Properties.Strings.OptimalDisplayBrightness;
             comboOptimalBrightness.Items[0] = Properties.Strings.Off;
             comboOptimalBrightness.Items[1] = Properties.Strings.OnAlways;
@@ -605,6 +618,17 @@ namespace GHelper
 
             buttonCores.Click += ButtonCores_Click;
 
+        }
+
+        void LiteToggle(string key, bool enabled)
+        {
+            AppConfig.Set(key, enabled ? 1 : 0);
+
+            if (MessageBox.Show(Properties.Strings.LiteRestartPrompt, Properties.Strings.ExtraSettings, MessageBoxButtons.YesNo) == DialogResult.Yes)
+            {
+                Process.Start(new ProcessStartInfo(Application.ExecutablePath) { UseShellExecute = true });
+                Application.Exit();
+            }
         }
 
         private void ButtonCores_Click(object? sender, EventArgs e)

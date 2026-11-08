@@ -680,6 +680,42 @@ namespace GHelper.Properties {
                 return ResourceManager.GetString("BootSound", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string similar to GPU control (mode switching / overclocking).
+        /// </summary>
+        internal static string LiteGPUControl {
+            get {
+                return ResourceManager.GetString("LiteGPUControl", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Fan curve control.
+        /// </summary>
+        internal static string LiteFanControl {
+            get {
+                return ResourceManager.GetString("LiteFanControl", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to CPU power limits / temp targets / undervolt.
+        /// </summary>
+        internal static string LitePowerControl {
+            get {
+                return ResourceManager.GetString("LitePowerControl", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Takes effect after restarting G-Helper. Restart now?.
+        /// </summary>
+        internal static string LiteRestartPrompt {
+            get {
+                return ResourceManager.GetString("LiteRestartPrompt", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   Looks up a localized string similar to Brightness.

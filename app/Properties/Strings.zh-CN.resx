@@ -312,6 +312,18 @@
   <data name="BootSound" xml:space="preserve">
     <value>开机音效</value>
   </data>
+  <data name="LiteGPUControl" xml:space="preserve">
+    <value>GPU 控制（模式切换 / 超频）</value>
+  </data>
+  <data name="LiteFanControl" xml:space="preserve">
+    <value>风扇曲线控制</value>
+  </data>
+  <data name="LitePowerControl" xml:space="preserve">
+    <value>CPU 功耗 / 温度墙 / 降压</value>
+  </data>
+  <data name="LiteRestartPrompt" xml:space="preserve">
+    <value>开关将在重启 G-Helper 后生效，要立即重启吗？</value>
+  </data>
   <data name="BacklightDown" xml:space="preserve">
     <value>调暗背光</value>
   </data>

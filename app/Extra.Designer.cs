@@ -115,6 +115,9 @@ namespace GHelper
             checkNoOverdrive = new CheckBox();
             checkELMB = new CheckBox();
             checkBootSound = new CheckBox();
+            checkLiteGPU = new CheckBox();
+            checkLiteFan = new CheckBox();
+            checkLitePower = new CheckBox();
             checkUSBC = new CheckBox();
             checkGpuApps = new CheckBox();
             checkNVPlatform = new CheckBox();
@@ -1202,6 +1205,9 @@ namespace GHelper
             panelSettings.Controls.Add(checkStatusLed);
             panelSettings.Controls.Add(checkStandbyNetworking);
             panelSettings.Controls.Add(checkAspm);
+            panelSettings.Controls.Add(checkLiteGPU);
+            panelSettings.Controls.Add(checkLiteFan);
+            panelSettings.Controls.Add(checkLitePower);
             panelSettings.Dock = DockStyle.Top;
             panelSettings.Location = new Point(15, 1252);
             panelSettings.Name = "panelSettings";
@@ -1272,6 +1278,45 @@ namespace GHelper
             checkBootSound.TabIndex = 5;
             checkBootSound.Text = "Boot Sound";
             checkBootSound.UseVisualStyleBackColor = true;
+            //
+            // checkLiteGPU
+            //
+            checkLiteGPU.AutoSize = true;
+            checkLiteGPU.Dock = DockStyle.Top;
+            checkLiteGPU.Location = new Point(21, 299);
+            checkLiteGPU.Margin = new Padding(5, 3, 5, 3);
+            checkLiteGPU.Name = "checkLiteGPU";
+            checkLiteGPU.Padding = new Padding(3);
+            checkLiteGPU.Size = new Size(917, 42);
+            checkLiteGPU.TabIndex = 61;
+            checkLiteGPU.Text = "GPU control (mode switching / overclocking)";
+            checkLiteGPU.UseVisualStyleBackColor = true;
+            //
+            // checkLiteFan
+            //
+            checkLiteFan.AutoSize = true;
+            checkLiteFan.Dock = DockStyle.Top;
+            checkLiteFan.Location = new Point(21, 341);
+            checkLiteFan.Margin = new Padding(5, 3, 5, 3);
+            checkLiteFan.Name = "checkLiteFan";
+            checkLiteFan.Padding = new Padding(3);
+            checkLiteFan.Size = new Size(917, 42);
+            checkLiteFan.TabIndex = 62;
+            checkLiteFan.Text = "Fan curve control";
+            checkLiteFan.UseVisualStyleBackColor = true;
+            //
+            // checkLitePower
+            //
+            checkLitePower.AutoSize = true;
+            checkLitePower.Dock = DockStyle.Top;
+            checkLitePower.Location = new Point(21, 383);
+            checkLitePower.Margin = new Padding(5, 3, 5, 3);
+            checkLitePower.Name = "checkLitePower";
+            checkLitePower.Padding = new Padding(3);
+            checkLitePower.Size = new Size(917, 42);
+            checkLitePower.TabIndex = 63;
+            checkLitePower.Text = "CPU power limits / temp targets / undervolt";
+            checkLitePower.UseVisualStyleBackColor = true;
             // 
             // checkUSBC
             // 
@@ -1833,6 +1878,9 @@ namespace GHelper
         private NumericUpDownWithUnit numericHibernateAfter;
         private ToolTip toolTip;
         private CheckBox checkBootSound;
+        private CheckBox checkLiteGPU;
+        private CheckBox checkLiteFan;
+        private CheckBox checkLitePower;
         private Panel panelAPU;
         private PictureBox pictureAPUMem;
         private Label labelAPUMem;
